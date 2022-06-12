@@ -1,24 +1,30 @@
 from rest_framework import generics, permissions
 from .serializers import UserSerializer, NoteSerializer
-from .permissions import IsOwnerOrReadOnly
+from .permissions import IsOwnerOrAdmin, IsUnauthorizedOrReadOnly, IsUserOrReadOnly
 from .models import Note
 from django.contrib.auth.models import User
 
 
-class UserList(generics.ListAPIView):
+class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [IsUnauthorizedOrReadOnly]
 
 
-class UserDetail(generics.RetrieveAPIView):
+class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [IsUserOrReadOnly]
 
 
 class NoteList(generics.ListCreateAPIView):
-    queryset = Note.objects.all()
     serializer_class = NoteSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Note.objects.all()
+        return Note.objects.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -27,6 +33,5 @@ class NoteList(generics.ListCreateAPIView):
 class NoteDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
-    permission_classes = [IsOwnerOrReadOnly, permissions.IsAuthenticatedOrReadOnly]
-
+    permission_classes = [IsOwnerOrAdmin]
     lookup_field = 'slug'

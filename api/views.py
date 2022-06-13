@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions
-from .serializers import UserSerializer, NoteSerializer
+from .serializers import UserSerializer, NoteSerializer, ThemeSerializer
 from .permissions import IsOwnerOrAdmin, IsUnauthorizedOrReadOnly, IsUserOrReadOnly
-from .models import Note
+from .models import Note, Theme
 from django.contrib.auth.models import User
 
 
@@ -35,3 +35,16 @@ class NoteDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = NoteSerializer
     permission_classes = [IsOwnerOrAdmin]
     lookup_field = 'slug'
+
+
+class ThemeList(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ThemeSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Theme.objects.all()
+        return Theme.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)

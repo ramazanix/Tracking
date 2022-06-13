@@ -8,7 +8,6 @@ class IsOwnerOrAdmin(permissions.BasePermission):
 
 class IsUnauthorizedOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
-        print(request.method, permissions.SAFE_METHODS, request.user)
         if request.method in permissions.SAFE_METHODS:
             return True
 
